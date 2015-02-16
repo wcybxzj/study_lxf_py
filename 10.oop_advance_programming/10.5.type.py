@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 __author__ = 'wcybxzj'
 
+#example 1
 class Hello(object):
     def hello(self, name = 'world'):
         print 'Hello, %s' % name
@@ -12,3 +13,12 @@ h.hello()
 print type(Hello)
 #h是一个实例，它的类型就是class Hello。
 print type(h)
+
+
+#example2
+def fn(self, name='world'):
+    print ('Hello, %s' % name)
+
+Hello1 = type('Hello', (object, ),dict(hello=fn) )
+h1 = Hello()
+h1.hello()

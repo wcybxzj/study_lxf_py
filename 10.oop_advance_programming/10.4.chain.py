@@ -12,4 +12,8 @@ class Chain(object):
     def __str__(self):
         return self.path
 
+    def __call__(self, args):
+        return Chain('%s/:%s' % (self, args))
+
 print Chain().status.user.timeline.list
+print Chain().users('micheal').repo
