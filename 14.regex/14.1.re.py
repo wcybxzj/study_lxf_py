@@ -1,6 +1,5 @@
 # -*- coding: utf-8 -*-
 __author__ = 'wcybxzj'
-
 import re
 
 class LearnRegex(object):
