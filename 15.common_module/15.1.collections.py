@@ -29,8 +29,6 @@ class mycollections(object):
         print dict(mylist)
         print OrderedDict(mylist)
 
-
-
     def run(self):
         self.namedtuple()
         self.deque()
