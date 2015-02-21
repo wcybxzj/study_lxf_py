@@ -81,5 +81,8 @@ class ClassTwo(object):
 obj = ClassOne()
 obj.run()
 print '++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++'
+print ClassOne.test_static()
+print ClassOne().test_static()
+print '++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++'
 obj2 = ClassTwo()
 obj2.run()
