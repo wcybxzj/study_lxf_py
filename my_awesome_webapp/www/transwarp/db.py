@@ -3,9 +3,65 @@ __author__ = 'yangbingxi'
 
 import time, uuid, functools, threading, logging
 
+class Dict(dict):
+    '''
+    >>> d1 = Dict()
+    >>> d1['x'] = 100
+    >>> d1.x
+    100
+    >>> d1.y=200
+    >>> d1['y']
+    200
+    >>> d2 = Dict(a=1, b=2, c='3')
+    >>> d2.c
+    '3'
+    >>> d2['empty']
+    Traceback (most recent call last):
+    KeyError: 'empty'
+    >>> d2.empty
+    Traceback (most recent call last):
+    AttributeError: 'Dict' object has no attribute 'empty'
+    >>> d3 = Dict(('a', 'b', 'c'), (1, 2, 3))
+    >>> d3.a
+    1
+    >>> d3.b
+    2
+    >>> d3.c
+    3
+    '''
+
+    def __init__(self, names=(), values=(), **kw):
+        super(Dict, self).__init__(**kw)
+        for k, v in zip(names, values):
+            self[k] = v
+
+    def __getattr__(self, key):
+        try:
+            return self[key]
+        except KeyError:
+            msg_pattern = r"'Dict' object has no attribute '%s'"
+            raise AttributeError(msg_pattern % key)
+
+    def __setattr__(self, key, value):
+        self[key] = value
+
+def next_id(t=None):
+    if t is None:
+        t = time.time()
+    return '%015d%s000' % (int(t * 1000), uuid.uuid4().hex)
+
+def _profiling(start, sql=''):
+    t = time.time()
+    if t > 0.1:
+        logging.warning('[PROFILING] DB %s: %s' % (t, sql))
+    else:
+        logging.info('[PROFILING] DB %s: %s' % (t, sql))
+
 class DBError(Exception):
     pass
 
+class MultiColumnsError(DBError):
+    pass
 
 # global engine object:
 engine = None
@@ -176,6 +232,70 @@ def with_connection(func):
     return _wrapper
 
 
+def with_transaction(func):
+    '''
+    A decorator that makes function around transaction.
+
+    >>> @with_transaction
+    ... def update_profile(id, name, rollback):
+    ...     u = dict(id=id, name=name, email='%s@test.org' % name, passwd=name, last_modified=time.time())
+    ...     insert('user', **u)
+    ...     r = update('update user set passwd=? where id=?', name.upper(), id)
+    ...     if rollback:
+    ...         raise StandardError('will cause rollback...')
+    >>> update_profile(8080, 'Julia', False)
+    >>> select_one('select * from user where id=?', 8080).passwd
+    u'JULIA'
+    >>> update_profile(9090, 'Robert', True)
+    Traceback (most recent call last):
+      ...
+    StandardError: will cause rollback...
+    >>> select('select * from user where id=?', 9090)
+    []
+    '''
+    @functools.wraps(func)
+    def _wrapper(*args, **kw):
+        _start = time.time()
+        with _TransactionCtx():
+            return func(*args, **kw)
+        _profiling(_start)
+    return _wrapper
+
+def _select(sql, first, *args):
+    global _db_ctx
+    cursor = None
+    sql = sql.replace('?', '%s')
+    logging.info('SQL: %s, ARGS: %s' % (sql, args))
+    try:
+        cursor = _db_ctx.connection.cursor()
+        cursor.execute(sql, args)
+        if cursor.description:
+            names = [x[0] for x in cursor.description]
+        if first:
+            values = cursor.fetchone()
+            if not values:
+                return None
+            return Dict(names, values)
+        return [Dict(names, x) for x in cursor.fetchall()]
+    finally:
+        if cursor:
+            cursor.close()
+
+@with_connection
+def select_one(sql, *args):
+    return _select(sql, True, *args)
+
+@with_connection
+def select_int(sql, *args):
+    d = _select(sql, True, *args)
+    if len(d) != 1:
+        raise MultiColumnsError('Expect only one column.')
+    return d.values()[0]
+
+@with_connection
+def select(sql, *args):
+    return _select(sql, False, *args)
+
 @with_connection
 def _update(sql, *args):
     global _db_ctx
@@ -194,27 +314,18 @@ def _update(sql, *args):
         if cursor:
             cursor.close()
 
-def select(sql, *args):
-    #return _select(sql, False, *args)
-    pass
-
 def insert(table, **kw):
     cols, args = zip(*kw.iteritems())
     format_pattern = 'insert into `%s` (%s) values (%s)'
     cols_sql = ','.join(['`%s`' % col for col in cols])
     content_sql = ','.join(['?'  for c in cols])
     sql = format_pattern % (table, cols_sql, content_sql)
-    print sql
+    return _update(sql, *args)
 
 def update(sql, *args):
     return _update(sql, *args)
 
 if __name__ == '__main__':
-    u1 = dict(id=2000, name='Bob', email='bob@test.org', passwd='bobobob', last_modified=time.time())
-    insert('user', **u1)
-    exit()
-
-
     logging.basicConfig(level=logging.DEBUG)
     create_engine('root', 'root', 'test')
     update('drop table if exists user')
