@@ -19,6 +19,7 @@ class IntegerField(Field):
 
 class ModelMetaclass(type):
     def __new__(cls, name, bases, attrs):
+        print name
         if name == 'Model':
             return type.__new__(cls, name, bases, attrs)
 
@@ -36,6 +37,8 @@ class ModelMetaclass(type):
         attrs['__mappings__'] = mappings # 保存属性和列的映射关系
         return type.__new__(cls, name, bases, attrs)
 
+print '============================================'
+print '定义class Model'
 
 class Model(dict):
     __metaclass__ = ModelMetaclass
@@ -70,12 +73,17 @@ class Model(dict):
         print ('SQL: %s' % sql)
         print ('ARGS: %s' % str(args))
 
+print '============================================'
+print '定义class User'
 
 class User(Model):
     id = IntegerField('id')
     name = StringField('username')
     email = StringField('email')
     password = StringField('pasword')
+
+print '类中的继承关系:'
+print User.__mro__
 
 user_info = {'id':12345, 'name':'Michael',
                'email':'ybx@163.com', 'password':'123'}
