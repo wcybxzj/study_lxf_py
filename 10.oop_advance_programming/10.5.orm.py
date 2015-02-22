@@ -19,6 +19,11 @@ class IntegerField(Field):
 
 class ModelMetaclass(type):
     def __new__(cls, name, bases, attrs):
+        if not hasattr(cls, 'count'):
+            cls.count = 0
+        cls.count = cls.count + 1
+        print cls.count
+        print'+++++++++++++++++++++++++++++++++++++++++'
         print name
         if name == 'Model':
             return type.__new__(cls, name, bases, attrs)
@@ -87,6 +92,8 @@ print User.__mro__
 
 user_info = {'id':12345, 'name':'Michael',
                'email':'ybx@163.com', 'password':'123'}
+print '============================================'
+print '创建对象'
 u = User(**user_info)
 u.save()
 
