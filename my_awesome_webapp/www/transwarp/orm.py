@@ -313,6 +313,7 @@ class Model(dict):
         db.insert('%s' % self.__table__, **params)
         return self
 
+
 if __name__=='__main__':
     logging.basicConfig(level=logging.DEBUG)
     db.create_engine('root', 'root', 'test')
