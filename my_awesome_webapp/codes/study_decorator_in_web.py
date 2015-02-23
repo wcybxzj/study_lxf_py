@@ -35,6 +35,7 @@ def _build_pattern_fn(pattern):
 
 def interceptor(pattern='/'):
     def _decorator(func):
+        print'在没调用函数之前就把此句执行了'
         func.__interceptor__ = _build_pattern_fn(pattern)
         return func
     return _decorator
@@ -48,7 +49,6 @@ def _build_interceptor_fn(func, next):
     return _wrapper
 
 def _build_interceptor_chain(last_fn, *interceptors):
-
     L = list(interceptors)
     L.reverse()
     fn = last_fn
@@ -83,9 +83,9 @@ def f3(next):
 
 if __name__ == '__main__':
     print 'before calling'
-    chain = _build_interceptor_chain(target, f1, f2, f3)
-    ctx.request = Dict(path_info='/test/abc')
-    chain()
+    # chain = _build_interceptor_chain(target, f1, f2, f3)
+    # ctx.request = Dict(path_info='/test/abc')
+    # chain()
     #before f1()
     #before f2()
     #before f3()
