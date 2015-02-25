@@ -53,8 +53,4 @@ try:
 except ImportError:
     pass
 
-print type(configs)
-
 configs = toDict(configs)
-
-print type(configs)
